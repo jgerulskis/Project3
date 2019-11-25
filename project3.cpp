@@ -2,8 +2,8 @@
 #include <iostream>
 #include <stdio.h>
 
-void startRouter(int argc, char *argv[]);
-void startHost(int argc, char *argv[]);
+void startRouter(char *param);
+void startHost(char *param);
 
 
 int main(int argc, char *argv[]) {
@@ -20,9 +20,9 @@ int main(int argc, char *argv[]) {
     }
 
     if (isRouter) {
-        startRouter(argc, argv);
+        startRouter(argv[2]);
     } else {
-        startHost(argc, argv);
+        startHost(argv[2]);
     }
 
     // const char delimeter[2] = ",";
@@ -40,19 +40,23 @@ int main(int argc, char *argv[]) {
 
 // Router code below here
 
-void startRouter(int argc, char *argv[]) {
-
+void startRouter(char *param) {
+	//char *token = strtok(param, ",");
+	//while (token !=NULL){
+		//print("%s\n", token);
+		//token = strtok(NULL, ",");
+	//}
 }
 
 // =======================
 // Host code below here
 
-void startHost(int argc, char *argv[]) {
+void startHost(char *param) {
     const char delimeter[2] = ",";
     char *token;
     
     /* first token is routwr IP */
-    char* routerIP = strtok(argv[2], delimeter);
+    char* routerIP = strtok(param, delimeter);
     char* hostIP = strtok(NULL, delimeter);
     char* timeToLive = strtok(NULL, delimeter);
     if (routerIP == NULL || hostIP == NULL || timeToLive == NULL) {
