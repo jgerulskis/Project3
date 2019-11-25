@@ -20,9 +20,9 @@ int main(int argc, char *argv[]) {
     }
 
     if (isRouter) {
-        startRouter(argc, argv);
+        startRouter(argv[2]);
     } else {
-        startHost(argc, argv);
+        startHost(argv[2]);
     }
 
     // const char delimeter[2] = ",";
@@ -40,13 +40,17 @@ int main(int argc, char *argv[]) {
 
 // Router code below here
 
-void startRouter(int argc, char *argv[]) {
-
+void startRouter(char *param) {
+	//char *token = strtok(param, ",");
+	//while (token !=NULL){
+		//print("%s\n", token);
+		//token = strtok(NULL, ",");
+	//}
 }
 
 // =======================
 // Host code below here
 
-void startHost(int argc, char *argv[]) {
+void startHost(char *param) {
 
 }
