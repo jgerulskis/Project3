@@ -56,13 +56,23 @@ void startRouter(char *param) {
 	while (token !=NULL){
 		char *overlayIP = token;
 		char *vmIP = strtok(NULL, ",:");
+
+        if(overlayIP == NULL || vmIP == NULL){
+            printf("Invalid parameters, run as ./project3 --router <list of host IP mappings with each pair as \"overlapIP:vmIP\" and each pairing separated by \",\">\n");
+            return;
+        }
+
 		table[overlayIP] = vmIP;
-
-		printf("%s : %s\n", overlayIP, vmIP);
-		printf("vmIP: %s\n", table[overlayIP]);
-
 		token = strtok(NULL, ",:");
 	}
+
+    std::map<char*, char*>::iterator it = table.begin();
+
+    printf("Routing Table: \n");
+    while(it != table.end()){
+        printf("\t%s : %s \n", it->first, it->second);
+        it++;
+    }
 }
 
 // =======================
