@@ -1,9 +1,18 @@
 #include <string.h>
 #include <iostream>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
+// router 
 void startRouter(char *param);
+
+// host
 void startHost(char *param);
+void sendDataToRouter(char *routerIP);
+bool isDataToSend();
 
 
 int main(int argc, char *argv[]) {
@@ -55,7 +64,7 @@ void startHost(char *param) {
     const char delimeter[2] = ",";
     char *token;
     
-    /* first token is routwr IP */
+    /* routerIP,hostIP,TTL */
     char* routerIP = strtok(param, delimeter);
     char* hostIP = strtok(NULL, delimeter);
     char* timeToLive = strtok(NULL, delimeter);
@@ -64,4 +73,30 @@ void startHost(char *param) {
         return;
     }
     printf("Starting host with parameters router IP: %s, host IP: %s, TTL:, %s\n", routerIP, hostIP, timeToLive);
+}
+
+/**
+ * NOTE: File needs to give program read permissions too.
+ * @return If there is data waiting to be sent
+ */
+bool isDataToSend() {
+    return access("tosend.bin", R_OK) != -1;
+}
+
+/**
+ * @param routerIP - The IP of the router
+ */
+void sendDataToRouter(char* routerIP) {
+    struct sockaddr_in servaddr, cliaddr; 
+    int host = socket(AF_INET, SOCK_DGRAM, 0);     
+    bzero(&servaddr, sizeof(servaddr));    
+    servaddr.sin_addr.s_addr = inet_addr(routerIP); 
+    servaddr.sin_port = htons(2012); 
+    servaddr.sin_family = AF_INET;  
+   
+    // bind server address to socket descriptor 
+    bind(host, (struct sockaddr*)&servaddr, sizeof(servaddr)); 
+
+    // send data here
+
 }
