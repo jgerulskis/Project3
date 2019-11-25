@@ -1,6 +1,7 @@
 #include <string.h>
 #include <iostream>
 #include <stdio.h>
+#include <map>
 
 void startRouter(char *param);
 void startHost(char *param);
@@ -41,11 +42,18 @@ int main(int argc, char *argv[]) {
 // Router code below here
 
 void startRouter(char *param) {
-	//char *token = strtok(param, ",");
-	//while (token !=NULL){
-		//print("%s\n", token);
-		//token = strtok(NULL, ",");
-	//}
+	char *token = strtok(param, ",:");
+	std::map<char*, char*> table; 
+	while (token !=NULL){
+		char *overlayIP = token;
+		char *vmIP = strtok(NULL, ",:");
+		table[overlayIP] = vmIP;
+
+		printf("%s : %s\n", overlayIP, vmIP);
+		printf("vmIP: %s\n", table[overlayIP]);
+
+		token = strtok(NULL, ",:");
+	}
 }
 
 // =======================
