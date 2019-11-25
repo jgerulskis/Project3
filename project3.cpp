@@ -1,14 +1,11 @@
 #include <string.h>
 #include <iostream>
 #include <stdio.h>
-<<<<<<< HEAD
 #include <map>
-=======
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
->>>>>>> 42d4ab1ec34bc7d7e4ce7f7d6f45eddeddc168ec
 
 // router 
 void startRouter(char *param);
