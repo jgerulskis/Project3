@@ -91,6 +91,7 @@ void startHost(char *param) {
         return;
     }
     printf("Starting host with parameters router IP: %s, host IP: %s, TTL:, %s\n", routerIP, hostIP, timeToLive);
+    sendDataToRouter(routerIP);
 }
 
 /**
@@ -105,16 +106,38 @@ bool isDataToSend() {
  * @param routerIP - The IP of the router
  */
 void sendDataToRouter(char* routerIP) {
-    struct sockaddr_in servaddr, cliaddr; 
-    int host = socket(AF_INET, SOCK_DGRAM, 0);     
-    bzero(&servaddr, sizeof(servaddr));    
-    servaddr.sin_addr.s_addr = inet_addr(routerIP); 
-    servaddr.sin_port = htons(2012); 
-    servaddr.sin_family = AF_INET;  
-   
-    // bind server address to socket descriptor 
-    bind(host, (struct sockaddr*)&servaddr, sizeof(servaddr)); 
 
-    // send data here
+    char buffer[100]; 
+    char *message = "Hello Router"; 
+    int sockfd, n; 
+    struct sockaddr_in servaddr; 
+      
+    // clear servaddr 
+    bzero(&servaddr, sizeof(servaddr)); 
+    servaddr.sin_addr.s_addr = inet_addr(routerIP);
+    servaddr.sin_port = htons(2012); 
+    servaddr.sin_family = AF_INET; 
+      
+    // create datagram socket 
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0); 
+      
+    // connect to server 
+    if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) 
+    { 
+        printf("\n Error : Connect Failed \n"); 
+        exit(0); 
+    } 
+  
+    // request to send datagram 
+    // no need to specify server address in sendto 
+    // connect stores the peers IP and port 
+    sendto(sockfd, message, 1000, 0, (struct sockaddr*)NULL, sizeof(servaddr)); 
+      
+    // waiting for response 
+    recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL); 
+    puts(buffer); 
+  
+    // close the descriptor 
+    close(sockfd); 
 
 }
