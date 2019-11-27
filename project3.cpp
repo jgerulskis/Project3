@@ -14,6 +14,7 @@ void startRouter(char *param);
 void startHost(char *param);
 void sendDataToRouter(char *routerIP);
 bool isDataToSend();
+void receiveData();
 
 
 int main(int argc, char *argv[]) {
@@ -73,6 +74,7 @@ void startRouter(char *param) {
         printf("\t%s : %s \n", it->first, it->second);
         it++;
     }
+    receiveData();
 }
 
 // =======================
@@ -140,4 +142,33 @@ void sendDataToRouter(char* routerIP) {
     // close the descriptor 
     close(sockfd); 
 
+}
+
+void receiveData(){
+    char buffer[100]; 
+    char *message = "Hello Client"; 
+    int listenfd;
+    socklen_t len; 
+    struct sockaddr_in servaddr, cliaddr; 
+    bzero(&servaddr, sizeof(servaddr)); 
+  
+    // Create a UDP Socket 
+    listenfd = socket(AF_INET, SOCK_DGRAM, 0);         
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    servaddr.sin_port = htons(2012); 
+    servaddr.sin_family = AF_INET;  
+   
+    // bind server address to socket descriptor 
+    bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr)); 
+       
+    //receive the datagram 
+    len = sizeof(cliaddr); 
+    int n = recvfrom(listenfd, buffer, sizeof(buffer), 
+            0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
+    buffer[n] = '\0'; 
+    puts(buffer); 
+           
+    // send the response 
+    sendto(listenfd, message, 1000, 0, 
+        (struct sockaddr*)&cliaddr, sizeof(cliaddr)); 
 }
