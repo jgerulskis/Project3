@@ -14,7 +14,7 @@ void startRouter(char *param);
 void startHost(char *param);
 void sendDataToRouter(char *routerIP, char *hostIP, char *TTL);
 bool isDataToSend();
-void receiveDataFromHost(char *data, char *hostIP, char *TTL);
+void receiveDataFromHost(char **data, char *hostIP, char *TTL);
 
 
 int main(int argc, char *argv[]) {
@@ -79,7 +79,10 @@ void startRouter(char *param) {
     char hostIP[100];
     char TTL[100];
 
-    receiveDataFromHost(data, hostIP, TTL);
+    char* ptr = data;
+    char** ptrptr = &ptr;
+
+    receiveDataFromHost(ptrptr, hostIP, TTL);
 
     puts(data);
     puts(hostIP);
@@ -155,7 +158,7 @@ void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
 
 }
 
-void receiveDataFromHost(char *data[], char *hostIP, char *TTL){
+void receiveDataFromHost(char **data, char *hostIP, char *TTL){
 
     char *message = "Hello Client"; 
     int listenfd;
