@@ -89,7 +89,7 @@ void startRouter(char *param) {
     char* hostvmIP = table.find(ip)->second;
     std::cout << "VM IP: " << hostvmIP << std::endl;
 
-    sendDataToHost(hostvmIP, data);
+    sendDataToHost(hostvmIP, "Data File");
 }
 
 // =======================
