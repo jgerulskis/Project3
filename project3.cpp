@@ -12,7 +12,7 @@ void startRouter(char *param);
 
 // host
 void startHost(char *param);
-void sendDataToRouter(char *routerIP);
+void sendDataToRouter(char *routerIP, char *hostIP, char *TTL);
 bool isDataToSend();
 void receiveData();
 
@@ -173,14 +173,14 @@ void receiveData(){
     data[n] = '\0'; 
     puts(data); 
 
-    int n = recvfrom(listenfd, hostIP, sizeof(hostIP), 
+    int m = recvfrom(listenfd, hostIP, sizeof(hostIP), 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
-    hostIP[n] = '\0'; 
+    hostIP[m] = '\0'; 
     puts(hostIP);
 
-    int n = recvfrom(listenfd, TTL, sizeof(TTL), 
+    int o = recvfrom(listenfd, TTL, sizeof(TTL), 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
-    TTL[n] = '\0'; 
+    TTL[o] = '\0'; 
     puts(TTL); 
            
     // send the response 
