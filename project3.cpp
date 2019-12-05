@@ -14,7 +14,9 @@ void startRouter(char *param);
 void startHost(char *param);
 void sendDataToRouter(char *routerIP, char *hostIP, char *TTL);
 bool isDataToSend();
-void receiveDataAndSendToHost(std::map<char*, char*> table);
+void receiveDataFromHost(char *data, char *hostIP, char *TTL);
+void sendDataToHost(char* vmIP, char* data);
+void receiveDataFromRouter();
 
 
 int main(int argc, char *argv[]) {
@@ -53,28 +55,38 @@ int main(int argc, char *argv[]) {
 
 void startRouter(char *param) {
 	char *token = strtok(param, ",:");
-	std::map<char*, char*> table; 
+	std::map<std::string, char *> table; 
 	while (token !=NULL){
-		char *overlayIP = token;
-		char *vmIP = strtok(NULL, ",:");
+		char* overlayIP = token;
+		char* vmIP = strtok(NULL, ",:");
 
         if(overlayIP == NULL || vmIP == NULL){
             printf("Invalid parameters, run as ./project3 --router <list of host IP mappings with each pair as \"overlapIP:vmIP\" and each pairing separated by \",\">\n");
             return;
         }
 
-		table[overlayIP] = vmIP;
+		table[std::string(overlayIP)] = vmIP;
 		token = strtok(NULL, ",:");
 	}
 
-    std::map<char*, char*>::iterator it = table.begin();
+    std::map<std::string, char*>::iterator it = table.begin();
 
     printf("Routing Table: \n");
     while(it != table.end()){
-        printf("\t%s : %s \n", it->first, it->second);
+        std::cout << "\t" << it->first << " : " << it->second << std::endl;
         it++;
     }
-    receiveDataAndSendToHost(table);
+
+    char data[100];
+    char hostIP[100];
+    char TTL[100];
+
+    receiveDataFromHost(data, hostIP, TTL);
+    std::string ip(hostIP);
+    std::cout << "Overlay IP: " << ip << std::endl;
+    char* hostvmIP = table.find(ip)->second;
+    std::cout << "VM IP: " << hostvmIP << std::endl;
+    sendDataToHost(hostvmIP, data);
 }
 
 // =======================
@@ -94,6 +106,7 @@ void startHost(char *param) {
     }
     printf("Starting host with parameters router IP: %s, host IP: %s, TTL:, %s\n", routerIP, hostIP, timeToLive);
     sendDataToRouter(routerIP, hostIP, timeToLive);
+    receiveDataFromRouter();
 }
 
 /**
@@ -146,10 +159,7 @@ void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
 
 }
 
-void receiveDataAndSendToHost(std::map<char*, char*> table){
-    char data[100];
-    char hostIP[100];
-    char TTL[100];
+void receiveDataFromHost(char *data, char *hostIP, char *TTL){
 
     char *message = "Hello Client"; 
     int listenfd;
@@ -168,22 +178,88 @@ void receiveDataAndSendToHost(std::map<char*, char*> table){
        
     //receive the datagram 
     len = sizeof(cliaddr); 
-    int n = recvfrom(listenfd, data, sizeof(data), 
+    int n = recvfrom(listenfd, data, 100, 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
-    data[n] = '\0';   
-    puts(data);       
+    data[n] = '\0';     
 
-    int m = recvfrom(listenfd, hostIP, sizeof(hostIP), 
+    int m = recvfrom(listenfd, hostIP, 100, 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server
-    puts(table[hostIP]); 
+    hostIP[m] = '\0';
 
-    hostIP[m] = '\0'; 
-    puts(hostIP); 
-
-    int o = recvfrom(listenfd, TTL, sizeof(TTL), 
+    int o = recvfrom(listenfd, TTL, 100, 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
-    TTL[o] = '\0'; 
-    puts(TTL); 
+    TTL[o] = '\0';
+           
+    // send the response 
+    sendto(listenfd, message, 1000, 0, 
+        (struct sockaddr*)&cliaddr, sizeof(cliaddr)); 
+}
+
+void sendDataToHost(char* vmIP, char* data) {
+
+    char buffer[100];
+    char *message = "Hello Receiver Host"; 
+    int sockfd, n; 
+    struct sockaddr_in servaddr; 
+      
+    // clear servaddr 
+    bzero(&servaddr, sizeof(servaddr)); 
+    servaddr.sin_addr.s_addr = inet_addr(vmIP);
+    servaddr.sin_port = htons(2012); 
+    servaddr.sin_family = AF_INET; 
+      
+    // create datagram socket 
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0); 
+      
+    // connect to server 
+    if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) 
+    { 
+        printf("\n Error : Connect Failed \n"); 
+        exit(0); 
+    } 
+  
+    // request to send datagram 
+    // no need to specify server address in sendto 
+    // connect stores the peers IP and port 
+    sendto(sockfd, message, 1000, 0, (struct sockaddr*)NULL, sizeof(servaddr));
+    sendto(sockfd, data, 1000, 0, (struct sockaddr*)NULL, sizeof(servaddr));  
+      
+    // waiting for response 
+    recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL); 
+    puts(buffer); 
+  
+    // close the descriptor 
+    close(sockfd);
+}
+
+void receiveDataFromRouter(){
+    char buf[100];
+    char buf2[100];
+    char *message = "Hello Router From Receiver Host"; 
+    int listenfd;
+    socklen_t len; 
+    struct sockaddr_in servaddr, cliaddr; 
+    bzero(&servaddr, sizeof(servaddr)); 
+  
+    // Create a UDP Socket 
+    listenfd = socket(AF_INET, SOCK_DGRAM, 0);         
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    servaddr.sin_port = htons(2012); 
+    servaddr.sin_family = AF_INET;  
+   
+    // bind server address to socket descriptor 
+    bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr)); 
+       
+    //receive the datagram 
+    len = sizeof(cliaddr); 
+    int n = recvfrom(listenfd, buf, sizeof(buf), 
+            0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
+    buf[n] = '\0';
+    puts(buf);   
+    int m = recvfrom(listenfd, buf2, sizeof(buf2), 
+            0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
+    buf2[m] = '\0';
+    puts(buf2);    
            
     // send the response 
     sendto(listenfd, message, 1000, 0, 
