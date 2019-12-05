@@ -123,7 +123,7 @@ bool isDataToSend() {
 void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
 
     char buffer[100]; 
-    char *message = "Hello Router"; 
+    char *message = "Data"; 
     int sockfd, n; 
     struct sockaddr_in servaddr; 
       
@@ -161,7 +161,7 @@ void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
 
 void receiveDataFromHost(char *data, char *hostIP, char *TTL){
 
-    char *message = "Hello Client"; 
+    char *message = "Successfully sent to Router"; 
     int listenfd;
     socklen_t len; 
     struct sockaddr_in servaddr, cliaddr; 
@@ -198,7 +198,7 @@ void receiveDataFromHost(char *data, char *hostIP, char *TTL){
 void sendDataToHost(char* vmIP, char* data) {
 
     char buffer[100];
-    char *message = "Hello Receiver Host"; 
+    char *message = "Hello Receiver HostHere is the data: "; 
     int sockfd, n; 
     struct sockaddr_in servaddr; 
       
@@ -235,7 +235,7 @@ void sendDataToHost(char* vmIP, char* data) {
 void receiveDataFromRouter(){
     char buf[100];
     char buf2[100];
-    char *message = "Hello Router From Receiver Host"; 
+    char *message = "Successfully sent data to Receiver Host"; 
     int listenfd;
     socklen_t len; 
     struct sockaddr_in servaddr, cliaddr; 
