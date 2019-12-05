@@ -93,7 +93,7 @@ void startHost(char *param) {
         return;
     }
     printf("Starting host with parameters router IP: %s, host IP: %s, TTL:, %s\n", routerIP, hostIP, timeToLive);
-    sendDataToRouter(routerIP);
+    sendDataToRouter(routerIP, hostIP, timeToLive);
 }
 
 /**
@@ -107,7 +107,7 @@ bool isDataToSend() {
 /**
  * @param routerIP - The IP of the router
  */
-void sendDataToRouter(char* routerIP) {
+void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
 
     char buffer[100]; 
     char *message = "Hello Router"; 
@@ -134,6 +134,8 @@ void sendDataToRouter(char* routerIP) {
     // no need to specify server address in sendto 
     // connect stores the peers IP and port 
     sendto(sockfd, message, 1000, 0, (struct sockaddr*)NULL, sizeof(servaddr)); 
+    sendto(sockfd, hostIP, 1000, 0, (struct sockaddr*)NULL, sizeof(servaddr)); 
+    sendto(sockfd, TTL, 1000, 0, (struct sockaddr*)NULL, sizeof(servaddr)); 
       
     // waiting for response 
     recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL); 
@@ -145,7 +147,10 @@ void sendDataToRouter(char* routerIP) {
 }
 
 void receiveData(){
-    char buffer[100]; 
+    char data[100];
+    char hostIP[100];
+    char TTL[100];
+
     char *message = "Hello Client"; 
     int listenfd;
     socklen_t len; 
@@ -163,10 +168,20 @@ void receiveData(){
        
     //receive the datagram 
     len = sizeof(cliaddr); 
-    int n = recvfrom(listenfd, buffer, sizeof(buffer), 
+    int n = recvfrom(listenfd, data, sizeof(data), 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
-    buffer[n] = '\0'; 
-    puts(buffer); 
+    data[n] = '\0'; 
+    puts(data); 
+
+    int n = recvfrom(listenfd, hostIP, sizeof(hostIP), 
+            0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
+    hostIP[n] = '\0'; 
+    puts(hostIP);
+
+    int n = recvfrom(listenfd, TTL, sizeof(TTL), 
+            0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
+    TTL[n] = '\0'; 
+    puts(TTL); 
            
     // send the response 
     sendto(listenfd, message, 1000, 0, 
