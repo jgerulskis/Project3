@@ -14,7 +14,7 @@ void startRouter(char *param);
 void startHost(char *param);
 void sendDataToRouter(char *routerIP, char *hostIP, char *TTL);
 bool isDataToSend();
-void receiveDataFromHost(char *data, char *hostIP, char * TTL);
+void receiveDataFromHost(char *data, char *hostIP, char *TTL);
 
 
 int main(int argc, char *argv[]) {
@@ -155,7 +155,7 @@ void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
 
 }
 
-void receiveDataFromHost(char *data, char *hostIP, char *TTL){
+void receiveDataFromHost(char *data[], char *hostIP, char *TTL){
 
     char *message = "Hello Client"; 
     int listenfd;
@@ -174,9 +174,9 @@ void receiveDataFromHost(char *data, char *hostIP, char *TTL){
        
     //receive the datagram 
     len = sizeof(cliaddr); 
-    int n = recvfrom(listenfd, data, sizeof(data), 
+    int n = recvfrom(listenfd, (*data), sizeof((*data)), 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
-    data[n] = '\0';  
+    (*data)[n] = '\0';          
 
     int m = recvfrom(listenfd, hostIP, sizeof(hostIP), 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
