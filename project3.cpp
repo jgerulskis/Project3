@@ -82,10 +82,13 @@ void startRouter(char *param) {
     char TTL[100];
 
     receiveDataFromHost(data, hostIP, TTL);
+
     std::string ip(hostIP);
     std::cout << "Overlay IP: " << ip << std::endl;
+
     char* hostvmIP = table.find(ip)->second;
     std::cout << "VM IP: " << hostvmIP << std::endl;
+
     sendDataToHost(hostvmIP, data);
 }
 
@@ -94,7 +97,7 @@ void startRouter(char *param) {
 
 void startHost(char *param) {
     const char delimeter[2] = ",";
-    char *token;
+    //char *token;
     
     /* routerIP,hostIP,TTL */
     char* routerIP = strtok(param, delimeter);
@@ -105,6 +108,7 @@ void startHost(char *param) {
         return;
     }
     printf("Starting host with parameters router IP: %s, host IP: %s, TTL:, %s\n", routerIP, hostIP, timeToLive);
+    
     sendDataToRouter(routerIP, hostIP, timeToLive);
     receiveDataFromRouter();
 }
@@ -124,7 +128,7 @@ void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
 
     char buffer[100]; 
     char *message = "Data File"; 
-    int sockfd, n; 
+    int sockfd; 
     struct sockaddr_in servaddr; 
       
     // clear servaddr 
@@ -161,7 +165,7 @@ void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
 
 void receiveDataFromHost(char *data, char *hostIP, char *TTL){
 
-    char *message = "Data Sent to Router"; 
+    char *message = "Data Sent"; 
     int listenfd;
     socklen_t len; 
     struct sockaddr_in servaddr, cliaddr; 
@@ -198,8 +202,8 @@ void receiveDataFromHost(char *data, char *hostIP, char *TTL){
 void sendDataToHost(char* vmIP, char* data) {
 
     char buffer[100];
-    char *message = "Hello Receiver Host, here is the Data: "; 
-    int sockfd, n; 
+    char *message = "Data Received:"; 
+    int sockfd; 
     struct sockaddr_in servaddr; 
       
     // clear servaddr 
@@ -235,7 +239,7 @@ void sendDataToHost(char* vmIP, char* data) {
 void receiveDataFromRouter(){
     char buf[100];
     char buf2[100];
-    char *message = "Data Sent to Receiver Host"; 
+    char *message = "Data Sent"; 
     int listenfd;
     socklen_t len; 
     struct sockaddr_in servaddr, cliaddr; 
