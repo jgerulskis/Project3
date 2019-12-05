@@ -89,7 +89,7 @@ void startRouter(char *param) {
     char* hostvmIP = table.find(ip)->second;
     std::cout << "VM IP: " << hostvmIP << std::endl;
 
-    sendDataToHost(hostvmIP, "Data File");
+    sendDataToHost(hostvmIP, data);
 }
 
 // =======================
@@ -209,7 +209,7 @@ void sendDataToHost(char* vmIP, char* data) {
     // clear servaddr 
     bzero(&servaddr, sizeof(servaddr)); 
     servaddr.sin_addr.s_addr = inet_addr(vmIP);
-    servaddr.sin_port = htons(2014); 
+    servaddr.sin_port = htons(2012); 
     servaddr.sin_family = AF_INET; 
       
     // create datagram socket 
@@ -248,7 +248,7 @@ void receiveDataFromRouter(){
     // Create a UDP Socket 
     listenfd = socket(AF_INET, SOCK_DGRAM, 0);         
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
-    servaddr.sin_port = htons(2014); 
+    servaddr.sin_port = htons(2012); 
     servaddr.sin_family = AF_INET;  
    
     // bind server address to socket descriptor 
