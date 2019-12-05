@@ -198,7 +198,7 @@ void receiveDataFromHost(char *data, char *hostIP, char *TTL){
 void sendDataToHost(char* vmIP, char* data) {
 
     char buffer[100];
-    char *message = "Hello Receiver HostHere is the data: "; 
+    char *message = "Hello Receiver Host here is the data: "; 
     int sockfd, n; 
     struct sockaddr_in servaddr; 
       
