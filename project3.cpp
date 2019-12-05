@@ -165,7 +165,7 @@ void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
 
 void receiveDataFromHost(char *data, char *hostIP, char *TTL){
 
-    char *message = "Data Sent"; 
+    char *message = "Data Sent to Router"; 
     int listenfd;
     socklen_t len; 
     struct sockaddr_in servaddr, cliaddr; 
@@ -239,7 +239,7 @@ void sendDataToHost(char* vmIP, char* data) {
 void receiveDataFromRouter(){
     char buf[100];
     char buf2[100];
-    char *message = "Data Sent"; 
+    char *message = "Data Sent to Receiver Host"; 
     int listenfd;
     socklen_t len; 
     struct sockaddr_in servaddr, cliaddr; 
@@ -259,7 +259,8 @@ void receiveDataFromRouter(){
     int n = recvfrom(listenfd, buf, sizeof(buf), 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
     buf[n] = '\0';
-    puts(buf);   
+    puts(buf);
+
     int m = recvfrom(listenfd, buf2, sizeof(buf2), 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
     buf2[m] = '\0';
