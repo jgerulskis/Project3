@@ -14,7 +14,7 @@ void startRouter(char *param);
 void startHost(char *param);
 void sendDataToRouter(char *routerIP, char *hostIP, char *TTL);
 bool isDataToSend();
-void receiveDataFromHost(char **data, char *hostIP, char *TTL);
+void receiveDataAndSendToHost(std::map<char*, char*> table);
 
 
 int main(int argc, char *argv[]) {
@@ -74,19 +74,7 @@ void startRouter(char *param) {
         printf("\t%s : %s \n", it->first, it->second);
         it++;
     }
-
-    char data[100];
-    char hostIP[100];
-    char TTL[100];
-
-    char* ptr = data;
-    char** ptrptr = &ptr;
-
-    receiveDataFromHost(ptrptr, hostIP, TTL);
-
-    puts(data);
-    puts(hostIP);
-    puts(TTL);
+    receiveDataAndSendToHost(table);
 }
 
 // =======================
@@ -158,7 +146,10 @@ void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
 
 }
 
-void receiveDataFromHost(char **data, char *hostIP, char *TTL){
+void receiveDataAndSendToHost(std::map<char*, char*> table){
+    char data[100];
+    char hostIP[100];
+    char TTL[100];
 
     char *message = "Hello Client"; 
     int listenfd;
@@ -177,17 +168,22 @@ void receiveDataFromHost(char **data, char *hostIP, char *TTL){
        
     //receive the datagram 
     len = sizeof(cliaddr); 
-    int n = recvfrom(listenfd, (*data), sizeof((*data)), 
+    int n = recvfrom(listenfd, data, sizeof(data), 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
-    (*data)[n] = '\0';          
+    data[n] = '\0';   
+    puts(data);       
 
     int m = recvfrom(listenfd, hostIP, sizeof(hostIP), 
-            0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
+            0, (struct sockaddr*)&cliaddr,&len); //receive message from server
+    puts(table[hostIP]); 
+
     hostIP[m] = '\0'; 
+    puts(hostIP); 
 
     int o = recvfrom(listenfd, TTL, sizeof(TTL), 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
     TTL[o] = '\0'; 
+    puts(TTL); 
            
     // send the response 
     sendto(listenfd, message, 1000, 0, 
