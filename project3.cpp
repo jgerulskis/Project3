@@ -197,6 +197,8 @@ void receiveDataFromHost(char *data, char *hostIP, char *TTL){
     // send the response 
     sendto(listenfd, message, 1000, 0, 
         (struct sockaddr*)&cliaddr, sizeof(cliaddr)); 
+
+    close(listenfd);
 }
 
 void sendDataToHost(char* vmIP, char* data) {
