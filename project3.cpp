@@ -12,12 +12,9 @@ void startRouter(char *param);
 
 // host
 void startHost(char *param);
-void sendDataToRouter(char *routerIP, char *hostIP, char *TTL);
+void sendData(char *vmIP);
 bool isDataToSend();
-void receiveDataFromHost(char *data, char *hostIP, char *TTL);
-void sendDataToHost(char* vmIP, char* data);
-void receiveDataFromRouter();
-
+void receiveData();
 
 int main(int argc, char *argv[]) {
     
@@ -77,19 +74,12 @@ void startRouter(char *param) {
         it++;
     }
 
-    char data[100];
-    char hostIP[100];
-    char TTL[100];
+    receiveData();
 
-    receiveDataFromHost(data, hostIP, TTL);
-
-    std::string ip(hostIP);
-    std::cout << "Overlay IP: " << ip << std::endl;
-
-    char* hostvmIP = table.find(ip)->second;
+    char* hostvmIP = table.find("1.2.3.4")->second;
     std::cout << "VM IP: " << hostvmIP << std::endl;
 
-    sendDataToHost(hostvmIP, data);
+    sendData(hostvmIP);
 }
 
 // =======================
@@ -109,8 +99,8 @@ void startHost(char *param) {
     }
     printf("Starting host with parameters router IP: %s, host IP: %s, TTL:, %s\n", routerIP, hostIP, timeToLive);
     
-    sendDataToRouter(routerIP, hostIP, timeToLive);
-    receiveDataFromRouter();
+    sendData(routerIP);
+    receiveData();
 }
 
 /**
@@ -124,7 +114,7 @@ bool isDataToSend() {
 /**
  * @param routerIP - The IP of the router
  */
-void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
+void sendData(char* vmIP) {
 
     char buffer[100]; 
     char *message = "Data File"; 
@@ -133,7 +123,7 @@ void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
       
     // clear servaddr 
     bzero(&servaddr, sizeof(servaddr)); 
-    servaddr.sin_addr.s_addr = inet_addr(routerIP);
+    servaddr.sin_addr.s_addr = inet_addr(vmIP);
     servaddr.sin_port = htons(2013); 
     servaddr.sin_family = AF_INET; 
       
@@ -151,8 +141,6 @@ void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
     // no need to specify server address in sendto 
     // connect stores the peers IP and port 
     sendto(sockfd, message, 1000, 0, (struct sockaddr*)NULL, sizeof(servaddr)); 
-    sendto(sockfd, hostIP, 1000, 0, (struct sockaddr*)NULL, sizeof(servaddr)); 
-    sendto(sockfd, TTL, 1000, 0, (struct sockaddr*)NULL, sizeof(servaddr)); 
       
     // waiting for response 
     recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL); 
@@ -163,8 +151,8 @@ void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
 
 }
 
-void receiveDataFromHost(char *data, char *hostIP, char *TTL){
-
+void receiveData(){
+	char buffer[100];
     char *message = "Data Sent to Router"; 
     int listenfd;
     socklen_t len; 
@@ -182,91 +170,9 @@ void receiveDataFromHost(char *data, char *hostIP, char *TTL){
        
     //receive the datagram 
     len = sizeof(cliaddr); 
-    int n = recvfrom(listenfd, data, 100, 
+    int n = recvfrom(listenfd, buffer, sizeof(buffer), 
             0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
-    data[n] = '\0';     
-
-    int m = recvfrom(listenfd, hostIP, 100, 
-            0, (struct sockaddr*)&cliaddr,&len); //receive message from server
-    hostIP[m] = '\0';
-
-    int o = recvfrom(listenfd, TTL, 100, 
-            0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
-    TTL[o] = '\0';
-           
-    // send the response 
-    sendto(listenfd, message, 1000, 0, 
-        (struct sockaddr*)&cliaddr, sizeof(cliaddr)); 
-
-    close(listenfd);
-}
-
-void sendDataToHost(char* vmIP, char* data) {
-
-    char buffer[100];
-    char *message = "Data Received:"; 
-    int sockfd; 
-    struct sockaddr_in servaddr; 
-      
-    // clear servaddr 
-    bzero(&servaddr, sizeof(servaddr)); 
-    servaddr.sin_addr.s_addr = inet_addr(vmIP);
-    servaddr.sin_port = htons(2012); 
-    servaddr.sin_family = AF_INET; 
-      
-    // create datagram socket 
-    sockfd = socket(AF_INET, SOCK_DGRAM, 0); 
-      
-    // connect to server 
-    if(connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) 
-    { 
-        printf("\n Error : Connect Failed \n"); 
-        exit(0); 
-    } 
-  
-    // request to send datagram 
-    // no need to specify server address in sendto 
-    // connect stores the peers IP and port 
-    sendto(sockfd, message, 1000, 0, (struct sockaddr*)NULL, sizeof(servaddr));
-    sendto(sockfd, data, 1000, 0, (struct sockaddr*)NULL, sizeof(servaddr));  
-      
-    // waiting for response 
-    recvfrom(sockfd, buffer, sizeof(buffer), 0, (struct sockaddr*)NULL, NULL); 
-    puts(buffer); 
-  
-    // close the descriptor 
-    close(sockfd);
-}
-
-void receiveDataFromRouter(){
-    char buf[1000];
-    char buf2[1000];
-    char *message = "Data Sent to Receiver Host"; 
-    int listenfd;
-    socklen_t len; 
-    struct sockaddr_in servaddr, cliaddr; 
-    bzero(&servaddr, sizeof(servaddr)); 
-  
-    // Create a UDP Socket 
-    listenfd = socket(AF_INET, SOCK_DGRAM, 0);         
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
-    servaddr.sin_port = htons(2012); 
-    servaddr.sin_family = AF_INET;  
-   
-    // bind server address to socket descriptor 
-    bind(listenfd, (struct sockaddr*)&servaddr, sizeof(servaddr)); 
-       
-    //receive the datagram 
-    len = sizeof(cliaddr); 
-    int n = recvfrom(listenfd, buf, sizeof(buf), 
-            0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
-    buf[n] = '\0';
-    puts(buf);
-
-    int m = recvfrom(listenfd, buf2, sizeof(buf2), 
-            0, (struct sockaddr*)&cliaddr,&len); //receive message from server 
-    buf2[m] = '\0';
-    puts(buf2);    
+    buffer[n] = '\0';
            
     // send the response 
     sendto(listenfd, message, 1000, 0, 
