@@ -237,8 +237,8 @@ void sendDataToHost(char* vmIP, char* data) {
 }
 
 void receiveDataFromRouter(){
-    char buf[100];
-    char buf2[100];
+    char buf[1000];
+    char buf2[1000];
     char *message = "Data Sent to Receiver Host"; 
     int listenfd;
     socklen_t len; 
