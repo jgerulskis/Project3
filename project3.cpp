@@ -65,15 +65,15 @@ void startRouter(char *param) {
         it++;
     }
 
-    char data[100];
-    char hostIP[100];
-    char TTL[100];
+    //char data[100];
+    //char hostIP[100];
+    //char TTL[100];
 
-    std::string ip(hostIP);
-    std::cout << "Overlay IP: " << ip << std::endl;
+    //std::string ip(hostIP);
+    //std::cout << "Overlay IP: " << ip << std::endl;
 
-    char* hostvmIP = table.find(ip)->second;
-    std::cout << "VM IP: " << hostvmIP << std::endl;
+    //char* hostvmIP = table.find(ip)->second;
+    //std::cout << "VM IP: " << hostvmIP << std::endl;
 
     // 2. Set up and bind server
     struct sockaddr_in servaddr; 
@@ -130,10 +130,19 @@ void startHost(char *param) {
     bzero(&servaddr, sizeof(servaddr)); 
     servaddr.sin_addr.s_addr = inet_addr(routerIP);
     servaddr.sin_port = htons(2012); 
-    servaddr.sin_family = AF_INET; 
+    servaddr.sin_family = AF_INET;
+
+    struct sockaddr_in cliaddr; 
+    bzero(&cliaddr, sizeof(cliaddr)); 
+
+    cliaddr.sin_addr.s_addr = INADDR_ANY; 
+    cliaddr.sin_port = htons(2012); 
+    cliaddr.sin_family = AF_INET;   
 
     // 3. Set up host socket 
     int hostSocket = socket(AF_INET, SOCK_DGRAM, 0); 
+
+    bind(hostSocket, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
 
     // 4. Handle data
     sendData(servaddr, hostSocket);
@@ -149,7 +158,7 @@ bool isDataToSend() {
 }
 
 void sendData(struct sockaddr_in routerAddr, int socketFD) {
-    char *message = "10.0.2.15"; 
+    char *message = "10.0.2.4"; 
     socklen_t len = sizeof(routerAddr);
     sendto(socketFD, message, 1000, 0, (struct sockaddr*)&routerAddr, sizeof(routerAddr)); 
 }
