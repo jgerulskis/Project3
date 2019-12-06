@@ -134,7 +134,7 @@ void sendDataToRouter(char* routerIP, char* hostIP, char* TTL) {
     // clear servaddr 
     bzero(&servaddr, sizeof(servaddr)); 
     servaddr.sin_addr.s_addr = inet_addr(routerIP);
-    servaddr.sin_port = htons(2012); 
+    servaddr.sin_port = htons(2013); 
     servaddr.sin_family = AF_INET; 
       
     // create datagram socket 
@@ -174,7 +174,7 @@ void receiveDataFromHost(char *data, char *hostIP, char *TTL){
     // Create a UDP Socket 
     listenfd = socket(AF_INET, SOCK_DGRAM, 0);         
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY); 
-    servaddr.sin_port = htons(2012); 
+    servaddr.sin_port = htons(2013); 
     servaddr.sin_family = AF_INET;  
    
     // bind server address to socket descriptor 
