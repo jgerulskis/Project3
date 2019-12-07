@@ -17,7 +17,7 @@ bool isDataToSend();
 void sendData(struct sockaddr_in routerAddr, int socketFD, unsigned char *packet);
 void recvData(struct sockaddr_in routerAddr, int socketFD);
 void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL);
-void printPkt(char *packet);
+int printPkt(char *packet);
 
 
 int main(int argc, char *argv[]) {
@@ -97,8 +97,16 @@ void fowardData(int routerFD) {
 
     //receive the datagram 
     char buffer[1009];
+
     recv(routerFD, buffer, sizeof(buffer), 0);
-   	printPkt(buffer);
+   	int length = printPkt(buffer);
+   	int byteRead = 1000;
+
+   	while(byteRead < length){
+   		recv(routerFD, buffer, sizeof(buffer), 0);
+   		printPkt(buffer);
+   		byteRead += 1000;
+   	}
 
     //build client addr
     char *message = "hello host \n\nsincerely, \nthe router";
@@ -107,7 +115,7 @@ void fowardData(int routerFD) {
     cliaddr.sin_port = htons(2012); 
     cliaddr.sin_family = AF_INET;  
     // send data to client
-    sendto(routerFD, message, 1000, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr)); 
+    sendto(routerFD, message, 1000, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
 }
 
 // =======================
@@ -197,26 +205,31 @@ void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL){
 
     while(fread(packet+9, 1000, 1, f) == 1000){
     	sendData(routerAddr, socketFD, packet);
+    	usleep(100000);
     }
     sendData(routerAddr, socketFD, packet);
 }
 
-void printPkt(char *packet){
+int printPkt(char *packet){
 	printf("overlayIP: ");
 	for(int i = 0; i < 4; i++){
 		printf("%u.", packet[i]);
 	}
 	printf("\n");
-	printf("TTL: %u\n", packet[4]);
+	printf("TTL: %c\n", packet[4]);
 
 	unsigned char num[4];
-	for(int i = 0; i < 4; i++){
+	for(int i = 3; i >= 0; i--){
 		num[i] = packet[5+i];
 	}
-	int x = *(int*)num;
-	printf("Data length: %d\n", x);
+	int datalength = *(int*)num;
+	printf("Data length: %d\n", datalength);
 
-	for(int i = 0; i < x; i++){
-		printf("%u", packet[i+9]);
+	printf("Data:");
+	for(int i = 0; i < datalength; i++){
+		printf("%c", packet[i+9]);
 	}
+	printf("\n");
+
+	return datalength;
 }
