@@ -187,7 +187,7 @@ void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL){
     unsigned char content[1000];
     FILE *f;
 
-    f = fopen("test.bin", "rb");
+    f = fopen("test2.bin", "rb");
     fread(overlayIPHeader, sizeof(overlayIPHeader), 1, f);
     fread(contentLength, sizeof(contentLength), 1, f);
 
@@ -203,10 +203,12 @@ void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL){
     	packet[i+5] = contentLength[i];
     }
 
-    while(fread(packet+9, 1000, 1, f) == 1000){
+    while(fread(packet+9, 1000, 1, f) == 1){
     	sendData(routerAddr, socketFD, packet);
-    	usleep(100000);
+    	memset(packet+9, 0, 1000);
+    	//usleep(100000);
     }
+    //printf("fread: %d\n", l);
     sendData(routerAddr, socketFD, packet);
 }
 
@@ -226,7 +228,7 @@ int printPkt(char *packet){
 	printf("Data length: %d\n", datalength);
 
 	printf("Data:");
-	for(int i = 0; i < datalength; i++){
+	for(int i = 0; i < datalength-(datalength % 1000); i++){
 		printf("%c", packet[i+9]);
 	}
 	printf("\n");
