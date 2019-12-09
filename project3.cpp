@@ -125,9 +125,6 @@ void fowardData(int routerFD, std::map<std::string, char *> table) {
 
 	//decrementing ttl
 	ttl--;
-	if(ttl == 0){
-		return; //drop packet
-	}
 
     //build client addr
     //char *message = "hello host \n\nsincerely, \nthe router";
@@ -137,9 +134,8 @@ void fowardData(int routerFD, std::map<std::string, char *> table) {
     cliaddr.sin_family = AF_INET;  
     // send data to client
 
-    if(ttl-1 < numpack){
-    	int val = ttl - 1;
-    	sendto(routerFD, &val, sizeof(int), 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+    if(ttl < numpack){
+    	sendto(routerFD, &ttl, sizeof(int), 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
     }
     else{
     	sendto(routerFD, &numpack, sizeof(int), 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
@@ -216,7 +212,6 @@ bool isDataToSend() {
 }
 
 void sendData(struct sockaddr_in routerAddr, int socketFD, unsigned char* packet) {
-    //char *message = "10.0.2.4"; 
     socklen_t len = sizeof(routerAddr);
     sendto(socketFD, packet, maxPackSize, 0, (struct sockaddr*)&routerAddr, sizeof(routerAddr)); 
 }
@@ -229,6 +224,14 @@ void recvData(struct sockaddr_in routerAddr, int socketFD) {
 	for(int i = 0; i < numPackets; i++){
 		recvfrom(socketFD, packets[i], maxPackSize, 0, (struct sockaddr*)&routerAddr, &len);
 		printPkt(packets[i]);
+	}
+	if(numPackets > 0){
+		unsigned char num[4];
+		for(int i = 3; i >= 0; i--){
+			num[i] = packets[0][5+i];
+		}
+		int datalength = *(int*)num;
+		printf("File Received: \n\t Size: %d\n\t Packets Received: %d\n", datalength, numPackets);
 	}
 }
 
@@ -243,9 +246,6 @@ void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL, int* overl
     f = fopen("test2.bin", "rb");
     fread(overlayIPHeader, sizeof(overlayIPHeader), 1, f);
     fread(contentLength, sizeof(contentLength), 1, f);
-
-    //unsigned char content[contentLength];
-    //fread(content, sizeof(content), 1, f);
 
     for(int i = 0; i < 4; i++){
     	packet[i] = overlayIPHeader[i];
@@ -262,13 +262,18 @@ void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL, int* overl
     	packet[i+9] = (unsigned char)overlayIP[i];
     }
 
+    int counter = 1;
     while(fread(packet+13, 1000, 1, f) == 1){
     	sendData(routerAddr, socketFD, packet);
     	memset(packet+13, 0, 1000);
-    	//usleep(100000);
+    	usleep(100000);
+    	counter++;
     }
-    //printf("fread: %d\n", l);
+
     sendData(routerAddr, socketFD, packet);
+
+	int datalength = *(int*)contentLength;
+    printf("New File Transmission: \n\tSize: %c \n\tPackets Sent: %d \n", datalength, counter);
 }
 
 int printPkt(char *packet){
