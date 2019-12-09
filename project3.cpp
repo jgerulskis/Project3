@@ -160,11 +160,6 @@ void fowardData(int routerFD, std::map<std::string, char *> table) {
 
     if(ttl < numpack){
     	sendto(routerFD, &ttl, sizeof(int), 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
-    	fprintf(f, "%u ", (unsigned)time(NULL));
-    	fprintf(f, "%s ", SourceIP);
-    	fprintf(f, "%s ", overIP);
-    	fprintf(f, "%d ", ttl+1);
-    	fprintf(f, "TTL_EXPIRED\n");
     }
     else{
     	sendto(routerFD, &numpack, sizeof(int), 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
@@ -179,6 +174,14 @@ void fowardData(int routerFD, std::map<std::string, char *> table) {
     	fprintf(f, "%d ", i+1);
     	fprintf(f, "SENT_OKAY\n");
    	}
+
+   	if(ttl < numpack){
+    	fprintf(f, "%u ", (unsigned)time(NULL));
+    	fprintf(f, "%s ", SourceIP);
+    	fprintf(f, "%s ", overIP);
+    	fprintf(f, "%d ", ttl+1);
+    	fprintf(f, "TTL_EXPIRED\n");
+    }
 
    	fclose(f);
     free(overIP);
