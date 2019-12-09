@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <math.h>
 
 // router 
 void startRouter(char *param);
@@ -16,9 +17,10 @@ void startHost(char *param);
 bool isDataToSend();
 void sendData(struct sockaddr_in routerAddr, int socketFD, unsigned char *packet);
 void recvData(struct sockaddr_in routerAddr, int socketFD);
-void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL);
+void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL, int* IP);
 int printPkt(char *packet);
 
+int maxPackSize = 1013;
 
 int main(int argc, char *argv[]) {
     
@@ -86,22 +88,31 @@ void startRouter(char *param) {
 void fowardData(int routerFD, std::map<std::string, char *> table) {
 
     //receive the datagram 
-    char buffer[1009];
+    char packets[100][maxPackSize];
+    //char buffer[maxPackSize];
 
-    recv(routerFD, buffer, sizeof(buffer), 0);
-   	int length = printPkt(buffer);
+    recv(routerFD, packets[0], maxPackSize, 0);
+   	int length = printPkt(packets[0]);
+   	//printPkt(packets[0]);
+   	int ttl= (int)packets[0][4];
    	int byteRead = 1000;
 
+   	int numpack = 1;
    	while(byteRead < length){
-   		recv(routerFD, buffer, sizeof(buffer), 0);
-   		printPkt(buffer);
+   		recv(routerFD, packets[numpack], maxPackSize, 0);
    		byteRead += 1000;
+   		numpack++;
    	}
+   	printPkt(packets[0]);
+   	printPkt(packets[1]);
+
+   	double packSent = ceil(length/1000.0);
+   	printf("Packet sent: %f\n", packSent);
 
    	//overlay IP
    	char* overIP = (char*)malloc(15);
 	for(int i = 0; i < 4; i++){
-		int temp = buffer[i];
+		int temp = packets[0][i];
 		strcat(overIP, std::to_string(temp).c_str());
 		if(i != 3){
 			strcat(overIP, ".");
@@ -112,17 +123,24 @@ void fowardData(int routerFD, std::map<std::string, char *> table) {
 
 	char *vmIP = table.find(std::string(overIP))->second;
 
-	//TTL
-	int ttl= buffer[4];
-	printf("%c\n", buffer[4]);
+	//decrementing ttl
+	ttl--;
+	if(ttl == 0){
+		return; //drop packet
+	}
 
     //build client addr
     char *message = "hello host \n\nsincerely, \nthe router";
     struct sockaddr_in cliaddr;
-    cliaddr.sin_addr.s_addr = inet_addr(vmIP);  // TODO: make client ip
+    cliaddr.sin_addr.s_addr = inet_addr(vmIP);
     cliaddr.sin_port = htons(2012); 
     cliaddr.sin_family = AF_INET;  
     // send data to client
+
+   	int i;
+   	for(i = 0; i < packSent && i < ttl; i++){
+   		//sendto(routerFD, message, 1000, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+   	}
     sendto(routerFD, message, 1000, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
     free(overIP);
 }
@@ -162,8 +180,18 @@ void startHost(char *param) {
 
     bind(hostSocket, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
 
+    //parse OverlayIP
+    char *token = strtok(hostIP, ".");
+    int IP[4];
+    int j = 0;
+	while (token !=NULL){
+		IP[j] = atoi(token);
+		token = strtok(NULL, ",:");
+		j++;
+	}
+
     // 4. Handle data
-    buildPkt(servaddr, hostSocket, timeToLive);
+    buildPkt(servaddr, hostSocket, timeToLive, IP);
     recvData(servaddr, hostSocket);
 }
 
@@ -178,18 +206,18 @@ bool isDataToSend() {
 void sendData(struct sockaddr_in routerAddr, int socketFD, unsigned char* packet) {
     //char *message = "10.0.2.4"; 
     socklen_t len = sizeof(routerAddr);
-    sendto(socketFD, packet, 1009, 0, (struct sockaddr*)&routerAddr, sizeof(routerAddr)); 
+    sendto(socketFD, packet, maxPackSize, 0, (struct sockaddr*)&routerAddr, sizeof(routerAddr)); 
 }
 
 void recvData(struct sockaddr_in routerAddr, int socketFD) {
-    char buffer[1009];
+    char buffer[maxPackSize];
     socklen_t len = sizeof(routerAddr);
     recvfrom(socketFD, buffer, sizeof(buffer), 0, (struct sockaddr*)&routerAddr, &len); 
     printf("Response: %s", buffer);
 }
 
-void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL){
-	unsigned char packet[1009];
+void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL, int* overlayIP){
+	unsigned char packet[maxPackSize];
 
 	unsigned char overlayIPHeader[4];
     unsigned char contentLength[4];
@@ -210,12 +238,17 @@ void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL){
 
     //bytes are in reverse order
     for(int i = 0; i < 4; i++){
-    	packet[i+5] = contentLength[i];
+    	packet[i+5] = (contentLength)[i];
     }
 
-    while(fread(packet+9, 1000, 1, f) == 1){
+    //source IP
+    for(int i = 0; i < 4; i++){
+    	packet[i+9] = (unsigned char)overlayIP[i];
+    }
+
+    while(fread(packet+13, 1000, 1, f) == 1){
     	sendData(routerAddr, socketFD, packet);
-    	memset(packet+9, 0, 1000);
+    	memset(packet+13, 0, 1000);
     	//usleep(100000);
     }
     //printf("fread: %d\n", l);
@@ -228,7 +261,7 @@ int printPkt(char *packet){
 		printf("%u.", packet[i]);
 	}
 	printf("\n");
-	printf("TTL: %c\n", packet[4]);
+	printf("TTL: %u\n", packet[4]);
 
 	unsigned char num[4];
 	for(int i = 3; i >= 0; i--){
@@ -237,9 +270,15 @@ int printPkt(char *packet){
 	int datalength = *(int*)num;
 	printf("Data length: %d\n", datalength);
 
+	printf("SourceIP: ");
+	for(int i = 0; i < 4; i++){
+		printf("%u.", packet[i+9]);
+	}
+	printf("\n");
+
 	printf("Data:");
 	for(int i = 0; i < datalength-(datalength % 1000); i++){
-		printf("%c", packet[i+9]);
+		printf("%c", packet[i+13]);
 	}
 	printf("\n");
 
