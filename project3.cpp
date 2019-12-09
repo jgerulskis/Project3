@@ -231,7 +231,11 @@ void recvData(struct sockaddr_in routerAddr, int socketFD) {
 			num[i] = packets[0][5+i];
 		}
 		int datalength = *(int*)num;
-		printf("File Received: \n\t Size: %d\n\t Packets Received: %d\n", datalength, numPackets);
+		double packSent = ceil(datalength/1000.0);
+		printf("File Received: \n\t Size: %d\n\t Packets Received: %d\n\t Missing Packets: \n", datalength, numPackets);
+		for(int j = 0; j < packSent - numPackets; j++){
+			printf("\t\t IP Identifier %d", (int)(packSent-j));
+		}
 	}
 }
 
@@ -273,7 +277,7 @@ void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL, int* overl
     sendData(routerAddr, socketFD, packet);
 
 	int datalength = *(int*)contentLength;
-    printf("New File Transmission: \n\tSize: %c \n\tPackets Sent: %d \n", datalength, counter);
+    printf("New File Transmission: \n\tSize: %d \n\tPackets Sent: %d \n", datalength, counter);
 }
 
 int printPkt(char *packet){
