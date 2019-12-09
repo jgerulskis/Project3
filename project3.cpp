@@ -186,8 +186,12 @@ void startHost(char *param) {
     int j = 0;
 	while (token !=NULL){
 		IP[j] = atoi(token);
-		token = strtok(NULL, ",:");
+		token = strtok(NULL, ".");
 		j++;
+	}
+	if(j != 4){
+		printf("Error: Incorrect Host OverlayIP\n");
+		return;
 	}
 
     // 4. Handle data
