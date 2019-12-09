@@ -104,8 +104,8 @@ void fowardData(int routerFD, std::map<std::string, char *> table) {
    		byteRead += 1000;
    		numpack++;
    	}
-   	printPkt(packets[0]);
-   	printPkt(packets[1]);
+   	//printPkt(packets[0]);
+   	//printPkt(packets[1]);
 
    	double packSent = ceil(length/1000.0);
    	printf("Packet sent: %f\n", packSent);
@@ -255,7 +255,7 @@ void sendData(struct sockaddr_in routerAddr, int socketFD, unsigned char* packet
 }
 
 void recvData(struct sockaddr_in routerAddr, int socketFD) {
-	int numPackets;
+	int numPackets = 0;
     char packets[1000][maxPackSize];
     socklen_t len = sizeof(routerAddr);
 	recvfrom(socketFD, &numPackets, sizeof(numPackets), 0, (struct sockaddr*)&routerAddr, &len);
@@ -277,7 +277,7 @@ void recvData(struct sockaddr_in routerAddr, int socketFD) {
 		FILE *f;
 
 	  	//overlay IP
-	   	char* overIP = (char*)malloc(18);
+	   	char* overIP = (char*)calloc(1, 18);
 		for(int i = 0; i < 4; i++){
 			int temp = packets[0][i+9];
 			strcat(overIP, std::to_string(temp).c_str());
@@ -288,8 +288,19 @@ void recvData(struct sockaddr_in routerAddr, int socketFD) {
 		strcat(overIP, ".bin");
 		strcat(overIP, "\0");
 		std::cout << overIP << std::endl;
+		//char * filename;
 		
-		f = fopen("test34.bin", "ab");
+		//for(int i = 0; i < 18; i ++){
+			//if(overIP[i] == "\0"){
+				//break;
+			//}
+			//else{
+				//filename+i = *overIP[i];
+
+			//}
+		//}
+
+		f = fopen(overIP, "ab");
 
 		//writing to file
 		for(int j = 0; j < numPackets; j++){
