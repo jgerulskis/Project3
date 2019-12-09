@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <math.h>
+#include <time.h>
 
 // router 
 void startRouter(char *param);
@@ -121,6 +122,17 @@ void fowardData(int routerFD, std::map<std::string, char *> table) {
 	strcat(overIP, "\0");
 	std::cout << overIP << std::endl;
 
+   	char* SourceIP = (char*)malloc(15);
+	for(int i = 0; i < 4; i++){
+		int temp = packets[0][i+9];
+		strcat(SourceIP, std::to_string(temp).c_str());
+		if(i != 3){
+			strcat(SourceIP, ".");
+		}
+	}
+	strcat(SourceIP, "\0");
+	std::cout << SourceIP << std::endl;
+
 	char *vmIP = table.find(std::string(overIP))->second;
 
 	//decrementing ttl
@@ -134,8 +146,25 @@ void fowardData(int routerFD, std::map<std::string, char *> table) {
     cliaddr.sin_family = AF_INET;  
     // send data to client
 
+    FILE *f;
+    f = fopen("ROUTER_log.txt", "a");
+
+    if(table.find(overIP) == table.end()){
+    	fprintf(f, "%u ", (unsigned)time(NULL));
+    	fprintf(f, "%s ", SourceIP);
+    	fprintf(f, "%s ", overIP);
+    	fprintf(f, "%d ", 1);
+    	fprintf(f, "NO_ROUTE_TO_HOST\n");
+    	return;
+    }
+
     if(ttl < numpack){
     	sendto(routerFD, &ttl, sizeof(int), 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+    	fprintf(f, "%u ", (unsigned)time(NULL));
+    	fprintf(f, "%s ", SourceIP);
+    	fprintf(f, "%s ", overIP);
+    	fprintf(f, "%d ", ttl+1);
+    	fprintf(f, "TTL_EXPIRED\n");
     }
     else{
     	sendto(routerFD, &numpack, sizeof(int), 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
@@ -144,8 +173,14 @@ void fowardData(int routerFD, std::map<std::string, char *> table) {
    	int i;
    	for(i = 0; i < packSent && i < ttl; i++){
    		sendto(routerFD, packets[i], maxPackSize, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+   		fprintf(f, "%u ", (unsigned)time(NULL));
+    	fprintf(f, "%s ", SourceIP);
+    	fprintf(f, "%s ", overIP);
+    	fprintf(f, "%d ", i+1);
+    	fprintf(f, "SENT_OKAY\n");
    	}
-    //sendto(routerFD, message, 1000, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+
+   	fclose(f);
     free(overIP);
 }
 
@@ -221,20 +256,53 @@ void recvData(struct sockaddr_in routerAddr, int socketFD) {
     char packets[1000][maxPackSize];
     socklen_t len = sizeof(routerAddr);
 	recvfrom(socketFD, &numPackets, sizeof(numPackets), 0, (struct sockaddr*)&routerAddr, &len);
+	
+	//receiving packets
 	for(int i = 0; i < numPackets; i++){
 		recvfrom(socketFD, packets[i], maxPackSize, 0, (struct sockaddr*)&routerAddr, &len);
-		printPkt(packets[i]);
 	}
+
 	if(numPackets > 0){
+
 		unsigned char num[4];
 		for(int i = 3; i >= 0; i--){
 			num[i] = packets[0][5+i];
 		}
 		int datalength = *(int*)num;
 		double packSent = ceil(datalength/1000.0);
+
+		FILE *f;
+
+	  	//overlay IP
+	   	char* overIP = (char*)malloc(18);
+		for(int i = 0; i < 4; i++){
+			int temp = packets[0][i+9];
+			strcat(overIP, std::to_string(temp).c_str());
+			if(i != 3){
+				strcat(overIP, "_");
+			}
+		}
+		strcat(overIP, ".bin");
+		strcat(overIP, "\0");
+		std::cout << overIP << std::endl;
+		
+		f = fopen("test34.bin", "ab");
+
+		//writing to file
+		for(int j = 0; j < numPackets; j++){
+			if(j == numPackets-1){
+				fwrite(&packets[j], datalength%maxPackSize, 1, f);
+			}
+			else{
+				fwrite(&packets[j], maxPackSize, 1, f);
+			}
+		}
+
+		fclose(f);
+
 		printf("File Received: \n\t Size: %d\n\t Packets Received: %d\n\t Missing Packets: \n", datalength, numPackets);
 		for(int j = 0; j < packSent - numPackets; j++){
-			printf("\t\t IP Identifier %d", (int)(packSent-j));
+			printf("\t\t IP Identifier: %d\n", (int)(packSent-j));
 		}
 	}
 }
@@ -275,6 +343,8 @@ void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL, int* overl
     }
 
     sendData(routerAddr, socketFD, packet);
+
+    fclose(f);
 
 	int datalength = *(int*)contentLength;
     printf("New File Transmission: \n\tSize: %d \n\tPackets Sent: %d \n", datalength, counter);
