@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <time.h>
+#include <fcntl.h>
 
 // router 
 void startRouter(char *param);
@@ -83,7 +84,9 @@ void startRouter(char *param) {
     bind(routerFD, (struct sockaddr*)&servaddr, sizeof(servaddr));
 
     // 4. foward data
-    fowardData(routerFD, table);
+    while(true){
+        fowardData(routerFD, table);
+    }
 }
 
 void fowardData(int routerFD, std::map<std::string, char *> table) {
@@ -218,7 +221,8 @@ void startHost(char *param) {
     cliaddr.sin_family = AF_INET;   
 
     // 3. Set up host socket 
-    int hostSocket = socket(AF_INET, SOCK_DGRAM, 0); 
+    int hostSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    fcntl(hostSocket, F_SETFL, O_NONBLOCK); 
 
     bind(hostSocket, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
 
@@ -237,8 +241,13 @@ void startHost(char *param) {
 	}
 
     // 4. Handle data
-    buildPkt(servaddr, hostSocket, timeToLive, IP);
-    recvData(servaddr, hostSocket);
+    while (true) {
+    	if (isDataToSend()){
+    	   	buildPkt(servaddr, hostSocket, timeToLive, IP);
+            remove("tosend.bin");
+    	}
+    	recvData(servaddr, hostSocket);
+	}
 }
 
 /**
@@ -329,7 +338,7 @@ void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL, int* overl
     unsigned char content[1000];
     FILE *f;
 
-    f = fopen("test2.bin", "rb");
+    f = fopen("tosend.bin", "rb");
     fread(overlayIPHeader, sizeof(overlayIPHeader), 1, f);
     fread(contentLength, sizeof(contentLength), 1, f);
 
