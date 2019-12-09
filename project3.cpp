@@ -9,7 +9,7 @@
 
 // router 
 void startRouter(char *param);
-void fowardData(int routerFD);
+void fowardData(int routerFD, std::map<std::string, char *> table);
 
 // host
 void startHost(char *param);
@@ -67,16 +67,6 @@ void startRouter(char *param) {
         it++;
     }
 
-    //char data[100];
-    //char hostIP[100];
-    //char TTL[100];
-
-    //std::string ip(hostIP);
-    //std::cout << "Overlay IP: " << ip << std::endl;
-
-    //char* hostvmIP = table.find(ip)->second;
-    //std::cout << "VM IP: " << hostvmIP << std::endl;
-
     // 2. Set up and bind server
     struct sockaddr_in servaddr; 
     bzero(&servaddr, sizeof(servaddr)); 
@@ -90,10 +80,10 @@ void startRouter(char *param) {
     bind(routerFD, (struct sockaddr*)&servaddr, sizeof(servaddr));
 
     // 4. foward data
-    fowardData(routerFD);
+    fowardData(routerFD, table);
 }
 
-void fowardData(int routerFD) {
+void fowardData(int routerFD, std::map<std::string, char *> table) {
 
     //receive the datagram 
     char buffer[1009];
@@ -108,14 +98,33 @@ void fowardData(int routerFD) {
    		byteRead += 1000;
    	}
 
+   	//overlay IP
+   	char* overIP = (char*)malloc(15);
+	for(int i = 0; i < 4; i++){
+		int temp = buffer[i];
+		strcat(overIP, std::to_string(temp).c_str());
+		if(i != 3){
+			strcat(overIP, ".");
+		}
+	}
+	strcat(overIP, "\0");
+	std::cout << overIP << std::endl;
+
+	char *vmIP = table.find(std::string(overIP))->second;
+
+	//TTL
+	int ttl= buffer[4];
+	printf("%c\n", buffer[4]);
+
     //build client addr
     char *message = "hello host \n\nsincerely, \nthe router";
     struct sockaddr_in cliaddr;
-    cliaddr.sin_addr.s_addr = inet_addr("10.0.2.4");  // TODO: make client ip
+    cliaddr.sin_addr.s_addr = inet_addr(vmIP);  // TODO: make client ip
     cliaddr.sin_port = htons(2012); 
     cliaddr.sin_family = AF_INET;  
     // send data to client
     sendto(routerFD, message, 1000, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+    free(overIP);
 }
 
 // =======================
@@ -197,7 +206,8 @@ void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL){
     for(int i = 0; i < 4; i++){
     	packet[i] = overlayIPHeader[i];
     }
-    packet[4] = TTL[0]&0xff;
+    packet[4] = (unsigned char)atoi(TTL);
+
     //bytes are in reverse order
     for(int i = 0; i < 4; i++){
     	packet[i+5] = contentLength[i];
