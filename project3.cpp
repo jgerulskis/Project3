@@ -130,18 +130,26 @@ void fowardData(int routerFD, std::map<std::string, char *> table) {
 	}
 
     //build client addr
-    char *message = "hello host \n\nsincerely, \nthe router";
+    //char *message = "hello host \n\nsincerely, \nthe router";
     struct sockaddr_in cliaddr;
     cliaddr.sin_addr.s_addr = inet_addr(vmIP);
     cliaddr.sin_port = htons(2012); 
     cliaddr.sin_family = AF_INET;  
     // send data to client
 
+    if(ttl-1 < numpack){
+    	int val = ttl - 1;
+    	sendto(routerFD, &val, sizeof(int), 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+    }
+    else{
+    	sendto(routerFD, &numpack, sizeof(int), 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+    }
+
    	int i;
    	for(i = 0; i < packSent && i < ttl; i++){
-   		//sendto(routerFD, message, 1000, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+   		sendto(routerFD, packets[i], maxPackSize, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
    	}
-    sendto(routerFD, message, 1000, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
+    //sendto(routerFD, message, 1000, 0, (struct sockaddr*)&cliaddr, sizeof(cliaddr));
     free(overIP);
 }
 
@@ -214,10 +222,14 @@ void sendData(struct sockaddr_in routerAddr, int socketFD, unsigned char* packet
 }
 
 void recvData(struct sockaddr_in routerAddr, int socketFD) {
-    char buffer[maxPackSize];
+	int numPackets;
+    char packets[1000][maxPackSize];
     socklen_t len = sizeof(routerAddr);
-    recvfrom(socketFD, buffer, sizeof(buffer), 0, (struct sockaddr*)&routerAddr, &len); 
-    printf("Response: %s", buffer);
+	recvfrom(socketFD, &numPackets, sizeof(numPackets), 0, (struct sockaddr*)&routerAddr, &len);
+	for(int i = 0; i < numPackets; i++){
+		recvfrom(socketFD, packets[i], maxPackSize, 0, (struct sockaddr*)&routerAddr, &len);
+		printPkt(packets[i]);
+	}
 }
 
 void buildPkt(struct sockaddr_in routerAddr, int socketFD, char* TTL, int* overlayIP){
