@@ -123,7 +123,6 @@ void fowardData(int routerFD, std::map<std::string, char *> table) {
 		}
 	}
 	strcat(overIP, "\0");
-	std::cout << overIP << std::endl;
 
    	char* SourceIP = (char*)malloc(15);
 	for(int i = 0; i < 4; i++){
@@ -134,7 +133,6 @@ void fowardData(int routerFD, std::map<std::string, char *> table) {
 		}
 	}
 	strcat(SourceIP, "\0");
-	std::cout << SourceIP << std::endl;
 
 	char *vmIP = table.find(std::string(overIP))->second;
 
@@ -296,18 +294,6 @@ void recvData(struct sockaddr_in routerAddr, int socketFD) {
 		}
 		strcat(overIP, ".bin");
 		strcat(overIP, "\0");
-		std::cout << overIP << std::endl;
-		//char * filename;
-		
-		//for(int i = 0; i < 18; i ++){
-			//if(overIP[i] == "\0"){
-				//break;
-			//}
-			//else{
-				//filename+i = *overIP[i];
-
-			//}
-		//}
 
 		f = fopen(overIP, "ab");
 
